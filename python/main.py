@@ -49,44 +49,17 @@ while True:
     if not ret:
         break
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-
-    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
-
-    circles = cv2.HoughCircles(
-        blurred,
-        cv2.HOUGH_GRADIENT,
-        dp=1,
-        minDist=50,
-        param1=100,
-        param2=30,
-        minRadius=10,
-        maxRadius=100
-    )
-
-    if circles is not None:
-        circles = np.round(circles[0, :]).astype("int")
-        
-        darkest_circle = None
-        min_brightness = float('inf')
-        
-        for (x, y, r) in circles:
-            roi = gray[max(0, y-r//2):min(gray.shape[0], y+r//2), 
-                max(0, x-r//2):min(gray.shape[1], x+r//2)]
-            
-            brightness = np.mean(roi) if roi.size > 0 else 255
-            
-            if roi.size > 0 and brightness < min_brightness:
-                min_brightness = brightness
-                darkest_circle = (x, y, r)
-        
-        if darkest_circle is not None:
-            x, y, r = darkest_circle
-            cv2.circle(frame, (x, y), r, (0, 255, 0), 2)
-            cv2.circle(frame, (x, y), 2, (0, 0, 255), 3)
-
-    cv2.imshow('Frame', frame)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame = cv2.equalizeHist(frame)
+    
+    thresh = np.percentile(frame, 10)
+    frame_mask = frame < thresh
+    cnt = cv2.findContours(frame_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    largest = max(cnt, key=cv2.contourArea) if cnt else None
+    largest_coords = largest[:, 0, :] if largest is not None else np.array([[0,0]])
+    if largest is not None:
+        for x, y in largest_coords:
+            cv2.circle(frame, (x, y), 1, (255, 0, 0), -1)
+    cv2.imshow("Frame", frame.astype(np.uint8)*255)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
