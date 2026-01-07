@@ -6,24 +6,30 @@ Servo servo2;
 
 void setup() {
   Serial.begin(115200);
-  servo1.attach(13); // D13
-  servo2.attach(14); // D14
-  Serial.println("Two servos ready!");
+  servo1.attach(13); // Servo 1 signal pin
+  servo2.attach(14); // Servo 2 signal pin
+  Serial.println("ESP32 Servo Controller Ready!");
 }
 
 void loop() {
-  // Move both servos to 0°
-  servo1.write(0);
-  servo2.write(0);
-  delay(1000);
+  // Check if serial data is available
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n'); // Read until newline
+    command.trim(); // Remove whitespace
 
-  // Move both to 90°
-  servo1.write(90);
-  servo2.write(90);
-  delay(1000);
-
-  // Move both to 180°
-  servo1.write(180);
-  servo2.write(180);
-  delay(1000);
+    // Expect command format: "S1:90" or "S2:45"
+    if (command.startsWith("S1:")) {
+      int pos = command.substring(3).toInt();
+      pos = constrain(pos, 0, 180);
+      servo1.write(pos);
+      Serial.print("Servo 1 moved to ");
+      Serial.println(pos);
+    } else if (command.startsWith("S2:")) {
+      int pos = command.substring(3).toInt();
+      pos = constrain(pos, 0, 180);
+      servo2.write(pos);
+      Serial.print("Servo 2 moved to ");
+      Serial.println(pos);
+    }
+  }
 }
